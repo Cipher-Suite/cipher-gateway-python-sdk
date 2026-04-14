@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tonpo"
-version = "1.0.1"
+version = "1.0.2"
 description = "Python SDK for the Tonpo Gateway — self-hosted MT5 trading infrastructure"
 readme = "README.md"
 license = { text = "Proprietary" }
@@ -41,7 +41,7 @@ Repository = "https://github.com/TonpoLabs/tonpo-py"
 "Bug Tracker" = "https://github.com/TonpoLabs/tonpo-py/issues"
 
 [tool.setuptools.packages.find]
-# Only ship the cipher_gateway package — not tests, scripts, or examples
+# Only ship the tonpo package — not tests, scripts, or examples
 include = ["tonpo*"]
 
 [tool.setuptools.package-data]
