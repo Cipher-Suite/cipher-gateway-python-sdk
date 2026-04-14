@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/cipher-gateway.svg)](https://pypi.org/project/cipher-gateway/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Official Python SDK for the **Cipher MT5 Gateway (CMG)** — a self-hosted bridge between your application and MetaTrader 5.
+Official Python SDK for the **Tonpo MT5 Gateway (TMG)** — a self-hosted bridge between your application and MetaTrader 5.
 
 Built and maintained by [CipherBridge](https://cipherbridge.cloud).
 
@@ -12,44 +12,44 @@ Built and maintained by [CipherBridge](https://cipherbridge.cloud).
 
 ## What is CMG?
 
-The Cipher MT5 Gateway is a self-hosted Rust server that manages MT5 terminal connections through the CipherBridge (CMB) C++ bridge. Instead of routing through third-party cloud APIs, CMG runs on your own infrastructure — giving you full control over latency, cost, and data.
+The Tonpo MT5 Gateway is a self-hosted Rust server that manages MT5 terminal connections through the CipherBridge (CMB) C++ bridge. Instead of routing through third-party cloud APIs, CMG runs on your own infrastructure — giving you full control over latency, cost, and data.
 
 ```
 Your App (Python)
       │
       │  HTTPS / WSS
       ▼
-CMG  (Rust — your server)
+TMG  (Rust — your server)
       │
       │  WebSocket
       ▼
-CMB  (C++ DLL + MQL5 EA)
+TMB  (C++ DLL + MQL5 EA)
       │
       ▼
 MT5 Terminal → Broker
 ```
 
-This SDK handles all communication with CMG so you never write raw HTTP calls.
+This SDK handles all communication with TMG so you never write raw HTTP calls.
 
 ---
 
 ## Installation
 
 ```bash
-pip install cipher-gateway
+pip install tonpo
 ```
 
 Or install the latest development version directly from GitHub:
 
 ```bash
-pip install git+https://github.com/cipher-suite/cipher-gateway-python.git
+pip install git+https://github.com/TonpoLabs/tonpo-py.git
 ```
 
 Or clone and install locally for development:
 
 ```bash
-git clone https://github.com/cipher-suite/cipher-gateway-python.git
-cd cipher-gateway-python
+git clone https://github.com/TonpoLabs/tonpo-py.git
+cd tonpo
 pip install -e ".[dev]"
 ```
 
@@ -61,7 +61,7 @@ pip install -e ".[dev]"
 
 ```python
 import asyncio
-from cipher_gateway import CipherGatewayClient, GatewayConfig
+from cipher_gateway import TonpoClient, TonpoConfig
 
 config = GatewayConfig(
     host="gateway.yourdomain.com",
@@ -70,14 +70,14 @@ config = GatewayConfig(
 )
 
 async def main():
-    # 1. Create a gateway user — do this once per user, store the credentials
-    async with CipherGatewayClient.admin(config) as client:
+    # 1. Create a tonpo user — do this once per user, store the credentials
+    async with TonpoClient.admin(config) as client:
         user_creds = await client.create_user()
         print(f"api_key:    {user_creds.api_key}")
         print(f"user_id:    {user_creds.gateway_user_id}")
 
     # 2. Provision an MT5 account — do this once per MT5 account
-    async with CipherGatewayClient.for_user(config, user_creds.api_key) as client:
+    async with TonpoClient.for_user(config, user_creds.api_key) as client:
         account = await client.create_account(
             mt5_login="12345678",
             mt5_password="YourMT5Password",
@@ -90,7 +90,7 @@ async def main():
         print("MT5 connected!")
 
     # 3. Trade — use api_key + account_id from now on, credentials never needed again
-    async with CipherGatewayClient.for_user(config, user_creds.api_key) as client:
+    async with TonpoClient.for_user(config, user_creds.api_key) as client:
         info = await client.get_account_info()
         print(f"Balance: {info.balance} {info.currency}")
 
@@ -104,7 +104,7 @@ asyncio.run(main())
 
 ## Core Concept — Credential Flow
 
-CMG owns your MT5 credentials. The SDK reflects this:
+TMG owns your MT5 credentials. The SDK reflects this:
 
 ```
 Step 1 — Register (one time per user)
@@ -132,9 +132,9 @@ Store only these three values per user in your database:
 ## Configuration
 
 ```python
-from cipher_gateway import GatewayConfig
+from tonpo import TonpoConfig
 
-config = GatewayConfig(
+config = TobpoConfig(
     host="gateway.yourdomain.com",  # CMG hostname or IP
     port=443,                        # 443 for SSL, 8080 for plain HTTP
     use_ssl=True,                    # Must match your nginx/proxy setup
@@ -155,7 +155,7 @@ config = GatewayConfig(
 Used only for `health_check()` and `create_user()`.
 
 ```python
-async with CipherGatewayClient.admin(config) as client:
+async with TonpoClient.admin(config) as client:
     healthy    = await client.health_check()
     user_creds = await client.create_user()
 ```
@@ -165,7 +165,7 @@ async with CipherGatewayClient.admin(config) as client:
 Used for all trading and account operations.
 
 ```python
-async with CipherGatewayClient.for_user(config, api_key="your-api-key") as client:
+async with TonpoClient.for_user(config, api_key="your-api-key") as client:
     info = await client.get_account_info()
 ```
 
@@ -182,9 +182,9 @@ healthy = await client.health_check()  # → bool
 ### User Management
 
 ```python
-# Create a new gateway user (admin client, no auth required)
+# Create a new tonpo user (admin client, no auth required)
 user_creds = await client.create_user()
-# user_creds.gateway_user_id  — store in DB
+# user_creds.tonpo_user_id  — store in DB
 # user_creds.api_key           — store in DB
 ```
 
@@ -327,7 +327,7 @@ alive = await client.ping_ws()  # → bool
 
 | Model | Fields |
 |---|---|
-| `GatewayConfig` | `host`, `port`, `use_ssl`, `api_key_header`, `connect_timeout`, `request_timeout`, `ws_reconnect_delay`, `max_reconnect_attempts` |
+| `TonpoConfig` | `host`, `port`, `use_ssl`, `api_key_header`, `connect_timeout`, `request_timeout`, `ws_reconnect_delay`, `max_reconnect_attempts` |
 | `UserCredentials` | `gateway_user_id`, `api_key` |
 | `AccountCredentials` | `account_id`, `auth_token` |
 | `AccountInfo` | `login`, `name`, `server`, `balance`, `equity`, `margin`, `free_margin`, `leverage`, `currency`, `profit`, `margin_level` |
@@ -342,36 +342,36 @@ alive = await client.ping_ws()  # → bool
 
 ## Exceptions
 
-All exceptions inherit from `CipherGatewayError`.
+All exceptions inherit from `TonpoError`.
 
 ```python
-from cipher_gateway import (
-    CipherGatewayError,        # base — catch-all for any SDK error
+from tonpo import (
+    TonpoError,        # base — catch-all for any SDK error
     NotStartedError,           # client used before start() / outside async with
     AuthenticationError,       # invalid or missing API key
     AccountNotFoundError,      # account_id does not exist on gateway
     AccountLoginFailedError,   # MT5 credentials rejected by broker
     AccountTimeoutError,       # account did not become active in time
     OrderError,                # order placement/close/modify failed
-    GatewayConnectionError,    # HTTP or WebSocket connection to gateway failed
+    TonpoConnectionError,    # HTTP or WebSocket connection to gateway failed
     SubscriptionError,         # WebSocket market-data subscription failed
-    GatewayResponseError,      # unexpected HTTP response (.status_code, .raw)
+    TonpoResponseError,      # unexpected HTTP response (.status_code, .raw)
 )
 ```
 
-> **Note:** The exception is named `GatewayConnectionError`, not `ConnectionError`,
+> **Note:** The exception is named `TonpoConnectionError`, not `ConnectionError`,
 > to avoid shadowing Python's built-in `builtins.ConnectionError`.
 
 Example error handling:
 
 ```python
-from cipher_gateway import (
-    CipherGatewayClient,
+from tonpo import (
+    TonpoClient,
     AccountLoginFailedError,
     AccountTimeoutError,
     GatewayConnectionError,
     AuthenticationError,
-    CipherGatewayError,
+    TonpoError,
 )
 
 # Account provisioning
@@ -387,9 +387,9 @@ try:
     result = await client.place_market_buy("EURUSD", volume=0.1)
 except AuthenticationError:
     print("API key invalid — re-register the user")
-except GatewayConnectionError:
+except TonpoConnectionError:
     print("Cannot reach gateway — check server")
-except CipherGatewayError as e:
+except TonpoError as e:
     print(f"Gateway error: {e}")
 ```
 
@@ -398,21 +398,21 @@ except CipherGatewayError as e:
 ## Usage in a Telegram Bot
 
 ```python
-from cipher_gateway import (
-    CipherGatewayClient,
-    GatewayConfig,
+from tonpo import (
+    TonpoClient,
+    TonpoConfig,
     AccountLoginFailedError,
     AccountTimeoutError,
 )
 
-config = GatewayConfig(host="gateway.yourdomain.com", port=443, use_ssl=True)
+config = TonpoConfig(host="gateway.yourdomain.com", port=443, use_ssl=True)
 
 # ── Registration handler — called once when user enters MT5 credentials ──────
 async def register_user(telegram_id, mt5_login, mt5_password, mt5_server):
-    async with CipherGatewayClient.admin(config) as c:
+    async with TonpoClient.admin(config) as c:
         user = await c.create_user()
 
-    async with CipherGatewayClient.for_user(config, user.api_key) as c:
+    async with TonpoClient.for_user(config, user.api_key) as c:
         account = await c.create_account(mt5_login, mt5_password, mt5_server)
         try:
             await c.wait_for_active(account.account_id, timeout=180)
@@ -423,14 +423,14 @@ async def register_user(telegram_id, mt5_login, mt5_password, mt5_server):
     # Save only these three — credentials never needed again
     db.save(
         telegram_id        = telegram_id,
-        gateway_api_key    = user.api_key,
-        gateway_account_id = account.account_id,
+        tonpo_api_key    = user.api_key,
+        tonpo_account_id = account.account_id,
     )
 
 # ── Trade handler — called on every trade command ────────────────────────────
 async def place_buy(telegram_id, symbol, volume):
     row = db.get(telegram_id=telegram_id)
-    async with CipherGatewayClient.for_user(config, row.gateway_api_key) as c:
+    async with TonpoClient.for_user(config, row.gateway_api_key) as c:
         result = await c.place_market_buy(symbol, volume=volume)
         return result.ticket
 ```
@@ -440,7 +440,7 @@ async def place_buy(telegram_id, symbol, volume):
 ## Project Structure
 
 ```
-cipher-gateway-python/          ← GitHub repo root
+tonpo-py/          ← GitHub repo root
 ├── pyproject.toml              ← packaging metadata (pip reads this)
 ├── setup.py                    ← minimal shim for legacy tools
 ├── MANIFEST.in                 ← files to include in source distribution
@@ -451,9 +451,9 @@ cipher-gateway-python/          ← GitHub repo root
 ├── .github/
 │   └── workflows/
 │       └── publish.yml         ← auto-publishes to PyPI on git tag
-└── cipher_gateway/             ← the installable package
+└── tonpo/             ← the installable package
     ├── __init__.py             ← public API + __version__
-    ├── client.py               ← CipherGatewayClient (main entry point)
+    ├── client.py               ← TonpoClient (main entry point)
     ├── models.py               ← all dataclasses
     ├── exceptions.py           ← exception hierarchy
     ← transport.py              ← HTTP layer (httpx wrapper)
@@ -480,7 +480,7 @@ git push origin v1.0.1
 ### v1.0.0 — 2026-04-10
 
 - Initial release
-- `CipherGatewayClient` with admin and user factory methods
+- `TonpoClient` with admin and user factory methods
 - Full account lifecycle: `create_account`, `wait_for_active`, `delete_account`, `pause_account`, `resume_account`
 - All order types: market, limit, stop
 - Position management: `get_positions`, `close_position`, `modify_position`

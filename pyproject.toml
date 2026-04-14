@@ -3,16 +3,16 @@ requires      = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cipher-gateway"
+name = "tonpo"
 version = "1.0.0"
-description = "Python SDK for the Cipher MT5 Gateway — self-hosted MT5 trading infrastructure"
+description = "Python SDK for the Tonpo Gateway — self-hosted MT5 trading infrastructure"
 readme = "README.md"
 license = { text = "Proprietary" }
 authors = [
-    { name = "CipherBridge", email = "dev@cipherbridge.cloud" }
+    { name = "TonpoLabs", email = "carbon-crumb-churn@duck.com" }
 ]
 requires-python = ">=3.10"
-keywords = ["mt5", "metatrader", "trading", "forex", "gateway", "cipher"]
+keywords = ["mt5", "metatrader", "trading", "forex", "gateway", "tonpo"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -37,13 +37,13 @@ dev = [
 
 [project.urls]
 Homepage   = "https://cipherbridge.cloud"
-Repository = "https://github.com/cipher-suite/cipher-gateway-python"
-"Bug Tracker" = "https://github.com/cipher-suite/cipher-gateway-python/issues"
+Repository = "https://github.com/TonpoLabs/tonpo-py"
+"Bug Tracker" = "https://github.com/TonpoLabs/tonpo-py/issues"
 
 [tool.setuptools.packages.find]
 # Only ship the cipher_gateway package — not tests, scripts, or examples
-include = ["cipher_gateway*"]
+include = ["tonpo*"]
 
 [tool.setuptools.package-data]
 # py.typed marks the package as PEP 561 typed — IDEs will use inline type hints
-cipher_gateway = ["py.typed"]
+tonpo = ["py.typed"]

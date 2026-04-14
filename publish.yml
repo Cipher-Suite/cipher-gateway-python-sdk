@@ -1,0 +1,37 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # triggers on v1.0.0, v1.2.3, etc.
+
+jobs:
+  build-and-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi                       # optional: require manual approval in GitHub
+
+    permissions:
+      id-token: write                       # required for Trusted Publishing (no password needed)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build wheel and sdist
+        run: python -m build
+        # Produces:
+        #   dist/cipher_gateway-1.0.0-py3-none-any.whl
+        #   dist/cipher_gateway-1.0.0.tar.gz
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses PyPI Trusted Publishing — no PYPI_API_TOKEN secret needed.
+        # Set up Trusted Publishing once at: https://pypi.org/manage/account/publishing/
