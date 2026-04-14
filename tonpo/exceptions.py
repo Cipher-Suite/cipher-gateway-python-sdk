@@ -47,7 +47,7 @@ class OrderError(TonpoError):
     pass
 
 
-class GatewayConnectionError(TonpoError):
+class TonpoConnectionError(TonpoError):
     """
     HTTP or WebSocket connection to the gateway failed.
 
@@ -63,7 +63,7 @@ class SubscriptionError(TonpoError):
     pass
 
 
-class GatewayResponseError(TonpoError):
+class TonpoResponseError(TonpoError):
     """
     Tonpo returned an unexpected or malformed HTTP response.
 
