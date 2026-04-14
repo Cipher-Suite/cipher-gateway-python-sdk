@@ -1,7 +1,7 @@
 # tonpo-py
 
-[![PyPI version](https://img.shields.io/pypi/v/tonpo.svg)](https://pypi.org/project/cipher-gateway/)
-[![Python](https://img.shields.io/pypi/pyversions/tonpo.svg)](https://pypi.org/project/cipher-gateway/)
+[![PyPI version](https://img.shields.io/pypi/v/tonpo.svg)](https://pypi.org/project/tonpo/)
+[![Python](https://img.shields.io/pypi/pyversions/tonpo.svg)](https://pypi.org/project/tonpo/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Official Python SDK for the **Tonpo MT5 Gateway (TMG)** — a self-hosted bridge between your application and MetaTrader 5.
@@ -10,7 +10,7 @@ Built and maintained by [TonpoLabs](https://cipherbridge.cloud).
 
 ---
 
-## What is TMG?
+### What is TMG?
 
 The Tonpo MT5 Gateway is a self-hosted Rust server that manages MT5 terminal connections through the TonpoBridge (TMB) C++ bridge. Instead of routing through third-party cloud APIs, TMG runs on your own infrastructure — giving you full control over latency, cost, and data.
 
@@ -33,7 +33,7 @@ This SDK handles all communication with TMG so you never write raw HTTP calls.
 
 ---
 
-## Installation
+### Installation
 
 ```bash
 pip install tonpo
@@ -57,7 +57,7 @@ pip install -e ".[dev]"
 
 ---
 
-## Quick Start
+### Quick Start
 
 ```python
 import asyncio
@@ -102,7 +102,7 @@ asyncio.run(main())
 
 ---
 
-## Core Concept — Credential Flow
+### Core Concept — Credential Flow
 
 TMG owns your MT5 credentials. The SDK reflects this:
 
@@ -129,7 +129,7 @@ Store only these three values per user in your database:
 
 ---
 
-## Configuration
+### Configuration
 
 ```python
 from tonpo import TonpoConfig
@@ -148,9 +148,9 @@ config = TonpoConfig(
 
 ---
 
-## Client Modes
+### Client Modes
 
-### Admin client — no authentication required
+#### Admin client — no authentication required
 
 Used only for `health_check()` and `create_user()`.
 
@@ -160,7 +160,7 @@ async with TonpoClient.admin(config) as client:
     user_creds = await client.create_user()
 ```
 
-### User client — authenticated
+#### User client — authenticated
 
 Used for all trading and account operations.
 
@@ -171,15 +171,15 @@ async with TonpoClient.for_user(config, api_key="your-api-key") as client:
 
 ---
 
-## API Reference
+### API Reference
 
-### Health
+#### Health
 
 ```python
 healthy = await client.health_check()  # → bool
 ```
 
-### User Management
+#### User Management
 
 ```python
 # Create a new tonpo user (admin client, no auth required)
@@ -220,7 +220,7 @@ await client.resume_account(account.account_id)
 await client.delete_account(account.account_id)
 ```
 
-### Account Information
+#### Account Information
 
 ```python
 info = await client.get_account_info()
@@ -253,7 +253,7 @@ result = await client.close_position(ticket=123456, volume=0.05)  # partial clos
 result = await client.modify_position(ticket=123456, sl=1.0800, tp=1.1000)
 ```
 
-### Orders
+#### Orders
 
 ```python
 # Market orders
@@ -294,7 +294,7 @@ price = await client.get_symbol_price("EURUSD")
 # Falls back to WebSocket price cache if REST returns zeros
 ```
 
-### Real-Time Data (WebSocket)
+#### Real-Time Data (WebSocket)
 
 ```python
 # Register callbacks before subscribing
@@ -323,7 +323,7 @@ alive = await client.ping_ws()  # → bool
 
 ---
 
-## Models
+### Models
 
 | Model | Fields |
 |---|---|
@@ -340,7 +340,7 @@ alive = await client.ping_ws()  # → bool
 
 ---
 
-## Exceptions
+### Exceptions
 
 All exceptions inherit from `TonpoError`.
 
@@ -395,7 +395,7 @@ except TonpoError as e:
 
 ---
 
-## Usage in a Telegram Bot
+### Usage in a Telegram Bot
 
 ```python
 from tonpo import (
@@ -437,7 +437,7 @@ async def place_buy(telegram_id, symbol, volume):
 
 ---
 
-## Project Structure
+### Project Structure
 
 ```
 tonpo-py/          ← GitHub repo root
@@ -461,7 +461,7 @@ tonpo-py/          ← GitHub repo root
     └── py.typed                ← PEP 561 marker (empty file — enables IDE type hints)
 ```
 
-### Publishing a new release
+#### Publishing a new release
 
 ```bash
 # Bump version in pyproject.toml and CHANGELOG.md, then:
@@ -475,7 +475,7 @@ git push origin v1.0.1
 
 ---
 
-## Changelog
+### Changelog
 
 ### v1.0.0 — 2026-04-10
 
@@ -490,6 +490,6 @@ git push origin v1.0.1
 
 ---
 
-## License
+### License
 
 MIT — see [LICENSE](LICENSE).
