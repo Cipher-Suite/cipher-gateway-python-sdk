@@ -83,7 +83,18 @@ class HttpTransport:
             return self._handle(r)
         except httpx.RequestError as e:
             raise TonpoConnectionError(f"DELETE {path} failed: {e}") from e
-
+            
+    async def patch(self, path: str, json: Optional[Dict] = None) -> Any:
+        """Send a PATCH request."""
+        self._ensure_started()
+        try:
+            r = await self._client.patch(
+                path, json=json or {}, headers=self._headers()
+            )
+            return self._handle(r)
+        except httpx.RequestError as e:
+            raise TonpoConnectionError(f"PATCH {path} failed: {e}") from e
+            
     def _handle(self, response: httpx.Response) -> Any:
         """Map HTTP status codes to SDK exceptions."""
         code = response.status_code
@@ -119,7 +130,7 @@ class HttpTransport:
         else:
             detail = raw[:300]
 
-        raise GatewayResponseError(
+        raise TonpoResponseError(
             detail,
             status_code=code,
             raw=raw,

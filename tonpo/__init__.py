@@ -1,4 +1,4 @@
-# tonpo-pyy/__init__.py
+# tonpo-py/__init__.py
 """
 Tonpo Python SDK
 ========================

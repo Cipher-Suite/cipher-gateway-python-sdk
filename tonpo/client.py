@@ -77,7 +77,7 @@ class TonpoClient:
     # ==================== Factory methods ====================
 
     @classmethod
-    def admin(cls, config: TonpoConfig) -> 'CipherGatewayClient':
+    def admin(cls, config: TonpoConfig) -> 'TonpoClient':
         """
         Create an unauthenticated admin client.
         Use only for: ``health_check()`` and ``create_user()``.
@@ -183,7 +183,7 @@ class TonpoClient:
         account_id = data.get('account_id')
 
         if not account_id:
-            raise CipherGatewayError(
+            raise TonpoError(
                 f"create_account() returned no account_id: {data}"
             )
 
@@ -286,6 +286,16 @@ class TonpoClient:
         """Get MT5 account balance, equity, margin, and other live info."""
         data = await self._http.get("/api/account")
         return AccountInfo.from_dict(data.get('account', data))
+    
+    async def list_symbols(self) -> List[str]:
+        """
+        List all symbols available on the connected MT5 account.
+        
+        Returns:
+            List of symbol strings (e.g. ``["EURUSD", "GBPUSD", "XAUUSD"]``).
+        """
+        data = await self._http.get("/api/symbols")
+        return data.get('symbols', [])
 
     # ==================== Positions ====================
 
@@ -444,7 +454,7 @@ class TonpoClient:
         Falls back to the WebSocket price cache if REST returns zeros.
 
         Raises:
-            TonPoError: No price available (not subscribed, bad symbol).
+            TonpoError: No price available (not subscribed, bad symbol).
         """
         try:
             data  = await self._http.get(f"/api/symbols/{symbol}")
