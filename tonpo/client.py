@@ -35,13 +35,12 @@ from .models import (
 )
 from .transport import HttpTransport
 from .websocket import WebSocketClient
-from .exceptions import (
-    AccountLoginFailedError,
-    AccountNotFoundError,
-    AccountTimeoutError,
-    TonpoError,
-    NotStartedError,
-)
+38: from .exceptions import (
+39:     AccountLoginFailedError,
+40:     AccountNotFoundError,
+41:     AccountTimeoutError,
+42:     NotStartedError,
+43: )
 
 logger = logging.getLogger(__name__)
 

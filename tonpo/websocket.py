@@ -12,8 +12,16 @@ from typing import Callable, Dict, List, Optional, Any
 import websockets
 from websockets.exceptions import ConnectionClosed
 
-from .models import TonpoConfig, Tick, Quote, Candle, Position, OrderResult, AccountInfo
 from .exceptions import TonpoConnectionError, SubscriptionError
+from .models import (
+    AccountInfo,
+    Candle,
+    OrderResult,
+    Position,
+    Quote,
+    Tick,
+    TonpoConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,8 +136,7 @@ class WebSocketClient:
             try:
                 msg = str(exc)
                 logger.warning("WebSocket closed (%s) — scheduling reconnect", msg)
-            
-            except:
+            except Exception:
                 logger.warning("WebSocket closed — scheduling reconnect")
                 
             self._connected = False
