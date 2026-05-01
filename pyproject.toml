@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "tonpo"
 version = "1.0.5"
-description = "Python SDK for integrating with Tonpo Gateway, enabling secure access to MetaTrader 5 trading services."
+description = "Tonpo Gateway — MT5 trading infrastructure powering real-time market data, order execution, and account management."
 readme = "README.md"
 license = { text = "Proprietary" }
 authors = [
@@ -47,3 +47,14 @@ include = ["tonpo*"]
 [tool.setuptools.package-data]
 # py.typed marks the package as PEP 561 typed — IDEs will use inline type hints
 tonpo = ["py.typed"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]   # errors, pyflakes, warnings, imports
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
