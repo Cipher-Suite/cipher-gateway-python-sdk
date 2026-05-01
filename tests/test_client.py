@@ -1,18 +1,18 @@
 # tests/test_client.py
 """
-Layer 2 — CipherGatewayClient unit tests.
+Layer 2 — TonpoClient unit tests.
 HTTP is mocked with respx. WebSocket is not exercised here.
 """
 import pytest
 import httpx
 import respx
 
-from cipher_gateway.client import CipherGatewayClient
-from cipher_gateway.models import GatewayConfig, AccountInfo, Position, OrderResult
-from cipher_gateway.exceptions import (
+from tonpo.client import TonpoClient
+from tonpo.models import TonpoConfig, AccountInfo, Position, OrderResult
+from tonpo.exceptions import (
     AccountLoginFailedError,
     AccountTimeoutError,
-    CipherGatewayError,
+    TonpoError,
     AuthenticationError,
 )
 
@@ -22,15 +22,15 @@ from cipher_gateway.exceptions import (
 class TestFactoryMethods:
 
     def test_admin_creates_client_without_api_key(self, config):
-        client = CipherGatewayClient.admin(config)
+        client = TonpoClient.admin(config)
         assert client._http._api_key is None
 
     def test_for_user_sets_api_key(self, config):
-        client = CipherGatewayClient.for_user(config, api_key="sk_test")
+        client = TonpoClient.for_user(config, api_key="sk_test")
         assert client._http._api_key == "sk_test"
 
     def test_for_user_sets_ws_api_key(self, config):
-        client = CipherGatewayClient.for_user(config, api_key="sk_test")
+        client = TonpoClient.for_user(config, api_key="sk_test")
         assert client._ws._api_key == "sk_test"
 
 
@@ -41,7 +41,7 @@ class TestLifecycle:
     @pytest.mark.asyncio
     async def test_context_manager_starts_and_stops(self, config):
         with respx.mock(base_url=config.base_url, assert_all_called=False):
-            async with CipherGatewayClient.admin(config) as client:
+            async with TonpoClient.admin(config) as client:
                 assert client._started is True
                 assert client._http._client is not None
             assert client._started is False
@@ -56,14 +56,14 @@ class TestHealthCheck:
     async def test_health_check_true_on_200(self, config):
         with respx.mock(base_url=config.base_url) as router:
             router.get("/health").mock(return_value=httpx.Response(200, json={"status": "ok"}))
-            async with CipherGatewayClient.admin(config) as client:
+            async with TonpoClient.admin(config) as client:
                 assert await client.health_check() is True
 
     @pytest.mark.asyncio
     async def test_health_check_false_on_error(self, config):
         with respx.mock(base_url=config.base_url) as router:
             router.get("/health").mock(side_effect=httpx.ConnectError("refused"))
-            async with CipherGatewayClient.admin(config) as client:
+            async with TonpoClient.admin(config) as client:
                 assert await client.health_check() is False
 
 
@@ -78,7 +78,7 @@ class TestCreateUser:
                 "user_id": "uid-abc",
                 "api_key": "sk_live_xyz",
             }))
-            async with CipherGatewayClient.admin(config) as client:
+            async with TonpoClient.admin(config) as client:
                 creds = await client.create_user()
             assert creds.gateway_user_id == "uid-abc"
             assert creds.api_key == "sk_live_xyz"
@@ -91,7 +91,7 @@ class TestCreateUser:
                 "userId": "uid-abc",
                 "apiKey": "sk_live_xyz",
             }))
-            async with CipherGatewayClient.admin(config) as client:
+            async with TonpoClient.admin(config) as client:
                 creds = await client.create_user()
             assert creds.gateway_user_id == "uid-abc"
             assert creds.api_key == "sk_live_xyz"
@@ -100,8 +100,8 @@ class TestCreateUser:
     async def test_raises_on_incomplete_response(self, config):
         with respx.mock(base_url=config.base_url) as router:
             router.post("/api/users").mock(return_value=httpx.Response(200, json={}))
-            async with CipherGatewayClient.admin(config) as client:
-                with pytest.raises(CipherGatewayError):
+            async with TonpoClient.admin(config) as client:
+                with pytest.raises(TonpoError):
                     await client.create_user()
 
 
@@ -119,7 +119,7 @@ class TestCreateAccount:
             route = router.post("/api/accounts").mock(
                 return_value=httpx.Response(201, json={"account_id": "acc-123", "auth_token": "tok"})
             )
-            async with CipherGatewayClient.for_user(config, "sk_test") as client:
+            async with TonpoClient.for_user(config, "sk_test") as client:
                 account = await client.create_account("12345678", "pass", "ICMarkets-Demo")
 
             # Inspect what was actually sent
@@ -140,7 +140,7 @@ class TestCreateAccount:
                 "account_id": "acc-abc-123",
                 "auth_token": "tok_xyz",
             }))
-            async with CipherGatewayClient.for_user(config, "sk_test") as client:
+            async with TonpoClient.for_user(config, "sk_test") as client:
                 creds = await client.create_account("12345", "pass", "Demo-Server")
             assert creds.account_id == "acc-abc-123"
             assert creds.auth_token == "tok_xyz"
@@ -151,7 +151,7 @@ class TestCreateAccount:
             route = router.post("/api/accounts").mock(
                 return_value=httpx.Response(201, json={"account_id": "acc-1"})
             )
-            async with CipherGatewayClient.for_user(config, "sk_test") as client:
+            async with TonpoClient.for_user(config, "sk_test") as client:
                 await client.create_account("123", "pass", "Demo", region="eu")
             import json
             body = json.loads(route.calls[0].request.content)
@@ -163,8 +163,8 @@ class TestCreateAccount:
             router.post("/api/accounts").mock(
                 return_value=httpx.Response(201, json={"status": "created"})
             )
-            async with CipherGatewayClient.for_user(config, "sk_test") as client:
-                with pytest.raises(CipherGatewayError):
+            async with TonpoClient.for_user(config, "sk_test") as client:
+                with pytest.raises(TonpoError):
                     await client.create_account("123", "pass", "Demo")
 
 
@@ -178,7 +178,7 @@ class TestWaitForActive:
             router.get("/api/accounts/acc-1").mock(return_value=httpx.Response(200, json={
                 "status": "active", "last_error": None
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 # Should not raise
                 await client.wait_for_active("acc-1", timeout=10, poll_interval=1)
 
@@ -189,7 +189,7 @@ class TestWaitForActive:
                 "status": "login_failed",
                 "last_error": "Invalid credentials"
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 with pytest.raises(AccountLoginFailedError) as exc_info:
                     await client.wait_for_active("acc-1", timeout=10, poll_interval=1)
             assert "Invalid credentials" in str(exc_info.value)
@@ -205,7 +205,7 @@ class TestWaitForActive:
                 "status": "login_failed",
                 "last_error": None          # key exists, value is None
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 with pytest.raises(AccountLoginFailedError) as exc_info:
                     await client.wait_for_active("acc-1", timeout=10, poll_interval=1)
             # Must NOT be "None" — must be the fallback message
@@ -218,7 +218,7 @@ class TestWaitForActive:
             router.get("/api/accounts/acc-1").mock(return_value=httpx.Response(200, json={
                 "status": "connecting", "last_error": None
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 with pytest.raises(AccountTimeoutError):
                     await client.wait_for_active("acc-1", timeout=1, poll_interval=1)
 
@@ -232,7 +232,7 @@ class TestWaitForActive:
         ])
         with respx.mock(base_url=config.base_url) as router:
             router.get("/api/accounts/acc-1").mock(side_effect=lambda _: next(responses))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.wait_for_active("acc-1", timeout=30, poll_interval=0)
 
 
@@ -246,7 +246,7 @@ class TestAccountManagement:
             router.get("/api/accounts/acc-1").mock(return_value=httpx.Response(200, json={
                 "account_id": "acc-1", "status": "active"
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 status = await client.get_account_status("acc-1")
             assert status["status"] == "active"
 
@@ -256,7 +256,7 @@ class TestAccountManagement:
             router.delete("/api/accounts/acc-1").mock(
                 return_value=httpx.Response(200, json={"message": "deleted"})
             )
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 result = await client.delete_account("acc-1")
             assert result is True
 
@@ -266,7 +266,7 @@ class TestAccountManagement:
             router.post("/api/accounts/acc-1/pause").mock(
                 return_value=httpx.Response(200, json={})
             )
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 result = await client.pause_account("acc-1")
             assert result is True
 
@@ -276,7 +276,7 @@ class TestAccountManagement:
             router.post("/api/accounts/acc-1/resume").mock(
                 return_value=httpx.Response(200, json={})
             )
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 result = await client.resume_account("acc-1")
             assert result is True
 
@@ -286,7 +286,7 @@ class TestAccountManagement:
             router.get("/api/accounts").mock(return_value=httpx.Response(200, json={
                 "accounts": [{"account_id": "acc-1"}, {"account_id": "acc-2"}]
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 accounts = await client.get_accounts()
             assert len(accounts) == 2
 
@@ -306,7 +306,7 @@ class TestAccountInfoAndPositions:
                     "profit": 0.0,
                 }
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 info = await client.get_account_info()
             assert isinstance(info, AccountInfo)
             assert info.login == 12345678
@@ -318,7 +318,7 @@ class TestAccountInfoAndPositions:
             router.get("/api/positions").mock(return_value=httpx.Response(200, json={
                 "positions": []
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 positions = await client.get_positions()
             assert positions == []
 
@@ -332,7 +332,7 @@ class TestAccountInfoAndPositions:
                      "swap": 0, "commission": 0},
                 ]
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 positions = await client.get_positions()
             assert len(positions) == 1
             assert isinstance(positions[0], Position)
@@ -350,7 +350,7 @@ class TestOrders:
     async def test_place_market_buy_payload(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.place_market_buy("EURUSD", volume=0.1, sl=1.0800, tp=1.1000)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -365,7 +365,7 @@ class TestOrders:
     async def test_place_market_sell_payload(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.place_market_sell("GBPUSD", volume=0.2)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -376,7 +376,7 @@ class TestOrders:
     async def test_place_limit_buy_includes_price(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.place_limit_buy("EURUSD", volume=0.1, price=1.0750)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -387,7 +387,7 @@ class TestOrders:
     async def test_place_stop_sell_includes_price(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.place_stop_sell("EURUSD", volume=0.1, price=1.0700)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -398,7 +398,7 @@ class TestOrders:
     async def test_optional_fields_omitted_when_not_provided(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.place_market_buy("EURUSD", volume=0.1)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -411,7 +411,7 @@ class TestOrders:
     async def test_magic_and_comment_sent_when_provided(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.place_market_buy(
                     "EURUSD", volume=0.1, comment="bot", magic=42
                 )
@@ -426,7 +426,7 @@ class TestOrders:
             router.post("/api/orders").mock(return_value=httpx.Response(200, json={
                 "ticket": 12345, "success": True, "error": None
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 result = await client.place_market_buy("EURUSD", volume=0.1)
             assert isinstance(result, OrderResult)
             assert result.ticket  == 12345
@@ -436,7 +436,7 @@ class TestOrders:
     async def test_close_position_full(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders/close").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 result = await client.close_position(ticket=99999)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -447,7 +447,7 @@ class TestOrders:
     async def test_close_position_partial(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders/close").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.close_position(ticket=99999, volume=0.05)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -457,7 +457,7 @@ class TestOrders:
     async def test_modify_position(self, config):
         with respx.mock(base_url=config.base_url) as router:
             route = router.post("/api/orders/modify").mock(return_value=self._order_response())
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 await client.modify_position(ticket=99999, sl=1.0800, tp=1.1000)
             import json
             body = json.loads(route.calls[0].request.content)
@@ -476,7 +476,7 @@ class TestSymbolPrice:
             router.get("/api/symbols/EURUSD").mock(return_value=httpx.Response(200, json={
                 "bid": 1.0850, "ask": 1.0852
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 price = await client.get_symbol_price("EURUSD")
             assert price.bid == 1.0850
             assert price.ask == 1.0852
@@ -488,7 +488,7 @@ class TestSymbolPrice:
             router.get("/api/symbols/EURUSD").mock(return_value=httpx.Response(200, json={
                 "bid": 0, "ask": 0
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
+            async with TonpoClient.for_user(config, "sk") as client:
                 # Manually populate the WS price cache
                 client._ws._price_cache["EURUSD"] = {
                     "bid": 1.0850, "ask": 1.0852, "last": 0, "time": 0
@@ -502,6 +502,6 @@ class TestSymbolPrice:
             router.get("/api/symbols/UNKNOWN").mock(return_value=httpx.Response(200, json={
                 "bid": 0, "ask": 0
             }))
-            async with CipherGatewayClient.for_user(config, "sk") as client:
-                with pytest.raises(CipherGatewayError):
+            async with TonpoClient.for_user(config, "sk") as client:
+                with pytest.raises(TonpoError):
                     await client.get_symbol_price("UNKNOWN")
