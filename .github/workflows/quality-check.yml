@@ -1,0 +1,43 @@
+name: Quality Check
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/**
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  quality:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install ruff mypy
+          pip install httpx websockets
+          pip install -e ".[dev]"
+
+      - name: Ruff — lint + syntax errors
+        run: ruff check tonpo/
+
+      - name: Ruff — formatting check
+        run: ruff format --check tonpo/
+
+      - name: Mypy — type checking
+        run: mypy tonpo/ --strict --ignore-missing-imports
+
+      - name: Pytest
+        run: pytest --tb=short

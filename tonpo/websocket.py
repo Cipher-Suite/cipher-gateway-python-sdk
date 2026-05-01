@@ -12,8 +12,16 @@ from typing import Callable, Dict, List, Optional, Any
 import websockets
 from websockets.exceptions import ConnectionClosed
 
-from .models import TonpoConfig, Tick, Quote, Candle, Position, OrderResult, AccountInfo
 from .exceptions import TonpoConnectionError, SubscriptionError
+from .models import (
+    AccountInfo,
+    Candle,
+    OrderResult,
+    Position,
+    Quote,
+    Tick,
+    TonpoConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +86,10 @@ class WebSocketClient:
                 task.cancel()
                 try:
                     await task
-                except Exception:
-                    pass
+                except asyncio.CancelledError:
+                    pass  # Expected when cancelling
+                except Exception as exc:
+                    logger.warning("Error during task cleanup: %s", exc)
 
         if self._connection and not self._connection.closed:
             await self._connection.close()
@@ -122,8 +132,13 @@ class WebSocketClient:
         try:
             async for message in self._connection:
                 await self._dispatch(message)
-        except ConnectionClosed:
-            logger.warning("WebSocket closed — scheduling reconnect")
+        except ConnectionClosed as exc:
+            try:
+                msg = str(exc)
+                logger.warning("WebSocket closed (%s) — scheduling reconnect", msg)
+            except Exception:
+                logger.warning("WebSocket closed — scheduling reconnect")
+                
             self._connected = False
             if not self._reconnect_task or self._reconnect_task.done():
                 self._reconnect_task = asyncio.create_task(

@@ -9,11 +9,11 @@ import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from cipher_gateway.websocket import WebSocketClient
-from cipher_gateway.models import (
-    GatewayConfig, Tick, Quote, Candle, Position, OrderResult, AccountInfo
+from tonpo.websocket import WebSocketClient
+from tonpo.models import (
+    TonpoConfig, Tick, Quote, Candle, Position, OrderResult, AccountInfo
 )
-from cipher_gateway.exceptions import GatewayConnectionError, SubscriptionError
+from tonpo.exceptions import TonpoConnectionError, SubscriptionError
 
 
 @pytest.fixture
@@ -21,8 +21,7 @@ def ws_client(config):
     return WebSocketClient(config, api_key="sk_test")
 
 
-# ==================== Init and state ====================
-
+# Init and state
 class TestWebSocketClientInit:
 
     def test_initial_state(self, ws_client):

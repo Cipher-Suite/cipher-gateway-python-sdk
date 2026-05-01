@@ -4,42 +4,34 @@ Layer 1 — Model unit tests.
 No network, no async — pure data transformation.
 """
 import pytest
-from cipher_gateway.models import (
-    GatewayConfig,
-    UserCredentials,
-    AccountCredentials,
-    AccountInfo,
-    Position,
-    OrderResult,
-    Quote,
-    Tick,
-    Candle,
-    SymbolPrice,
+from tonpo.models import (
+    TonpoConfig, UserCredentials, AccountCredentials,
+    AccountInfo, Position, OrderResult,
+    Quote, Tick, Candle, SymbolPrice,
 )
 
 
-# ==================== GatewayConfig ====================
-
-class TestGatewayConfig:
+# TonpoConfig
+class TestTonpoConfig:
 
     def test_base_url_http(self):
-        cfg = GatewayConfig(host="localhost", port=8080, use_ssl=False)
+        cfg = TonpoConfig(host="localhost", port=8080, use_ssl=False)
         assert cfg.base_url == "http://localhost:8080"
 
     def test_base_url_https(self):
-        cfg = GatewayConfig(host="gateway.example.com", port=443, use_ssl=True)
+        cfg = TonpoConfig(host="gateway.example.com", port=443, use_ssl=True)
         assert cfg.base_url == "https://gateway.example.com:443"
 
     def test_ws_url_plain(self):
-        cfg = GatewayConfig(host="localhost", port=8080, use_ssl=False)
+        cfg = TonpoConfig(host="localhost", port=8080, use_ssl=False)
         assert cfg.ws_url == "ws://localhost:8080/ws"
 
     def test_ws_url_tls(self):
-        cfg = GatewayConfig(host="gateway.example.com", port=443, use_ssl=True)
+        cfg = TonpoConfig(host="gateway.example.com", port=443, use_ssl=True)
         assert cfg.ws_url == "wss://gateway.example.com:443/ws"
 
     def test_defaults(self):
-        cfg = GatewayConfig()
+        cfg = TonpoConfig()
         assert cfg.host == "localhost"
         assert cfg.port == 8080
         assert cfg.use_ssl is False

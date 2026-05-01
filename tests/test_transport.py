@@ -7,13 +7,13 @@ import pytest
 import httpx
 import respx
 
-from cipher_gateway.transport import HttpTransport
-from cipher_gateway.models import GatewayConfig
-from cipher_gateway.exceptions import (
+from tonpo.transport import HttpTransport
+from tonpo.models import TonpoConfig
+from tonpo.exceptions import (
     AuthenticationError,
     AccountNotFoundError,
-    GatewayConnectionError,
-    GatewayResponseError,
+    TonpoConnectionError,
+    TonpoResponseError,
     NotStartedError,
 )
 
@@ -156,7 +156,7 @@ class TestStatusCodeMapping:
             )
             t = HttpTransport(config)
             await t.start()
-            with pytest.raises(GatewayResponseError) as exc_info:
+            with pytest.raises(TonpoResponseError) as exc_info:
                 await t.get("/api/account")
             await t.stop()
             assert exc_info.value.status_code == 500
@@ -170,7 +170,7 @@ class TestStatusCodeMapping:
             )
             t = HttpTransport(config)
             await t.start()
-            with pytest.raises(GatewayResponseError) as exc_info:
+            with pytest.raises(TonpoResponseError) as exc_info:
                 await t.post("/api/accounts", json={})
             await t.stop()
             assert exc_info.value.status_code == 422
@@ -183,7 +183,7 @@ class TestStatusCodeMapping:
             router.get("/health").mock(return_value=httpx.Response(502, text=html))
             t = HttpTransport(config)
             await t.start()
-            with pytest.raises(GatewayResponseError) as exc_info:
+            with pytest.raises(TonpoResponseError) as exc_info:
                 await t.get("/health")
             await t.stop()
             # HTML must be stripped from the user-facing message
@@ -196,6 +196,6 @@ class TestStatusCodeMapping:
             router.get("/health").mock(side_effect=httpx.ConnectError("refused"))
             t = HttpTransport(config)
             await t.start()
-            with pytest.raises(GatewayConnectionError):
+            with pytest.raises(TonpoConnectionError):
                 await t.get("/health")
             await t.stop()

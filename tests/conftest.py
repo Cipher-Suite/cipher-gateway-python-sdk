@@ -6,15 +6,14 @@ import pytest
 import httpx
 import respx
 
-from cipher_gateway.models import GatewayConfig
+from tonpo.models import TonpoConfig
 
 
-# ── Configs ─────────────────────────────────────────────────────────────────
-
+# Configs 
 @pytest.fixture
 def config():
     """Plain HTTP config used for mocked unit tests."""
-    return GatewayConfig(
+    return TonpoConfig(
         host="testgateway.local",
         port=8080,
         use_ssl=False,
@@ -28,15 +27,14 @@ def config():
 @pytest.fixture
 def ssl_config():
     """HTTPS config for URL-scheme tests."""
-    return GatewayConfig(
+    return TonpoConfig(
         host="gateway.example.com",
         port=443,
         use_ssl=True,
     )
 
 
-# ── Gateway mock ─────────────────────────────────────────────────────────────
-
+# Gateway mock 
 @pytest.fixture
 def mock_gateway(config):
     """

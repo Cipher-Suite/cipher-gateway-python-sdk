@@ -35,13 +35,12 @@ from .models import (
 )
 from .transport import HttpTransport
 from .websocket import WebSocketClient
-from .exceptions import (
-    AccountLoginFailedError,
-    AccountNotFoundError,
-    AccountTimeoutError,
-    TonpoError,
-    NotStartedError,
-)
+38: from .exceptions import (
+39:     AccountLoginFailedError,
+40:     AccountNotFoundError,
+41:     AccountTimeoutError,
+42:     NotStartedError,
+43: )
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +105,14 @@ class TonpoClient:
         await self._http.stop()
         self._started = False
         logger.debug("TonpoClient stopped")
+    
+    def _ensure_started(self) -> None:
+        """Raise NotStartedError if client hasn't been started."""
+        if not self._started:
+            raise NotStartedError(
+                "TonpoClient not started. Use 'async with TonpoClient.for_user(config, api_key) as client:' "
+                "or call await client.start() before using any methods."
+            )
 
     async def __aenter__(self):
         await self.start()
@@ -114,18 +121,17 @@ class TonpoClient:
     async def __aexit__(self, *_):
         await self.stop()
 
-    # ==================== Health ====================
-
+    # Health 
     async def health_check(self) -> bool:
         """Return True if the gateway is reachable and healthy."""
+        self._ensure_started()
         try:
             await self._http.get("/health")
             return True
         except Exception:
             return False
 
-    # ==================== User management ====================
-
+    # User management
     async def create_user(self) -> UserCredentials:
         """
         Create a new Tonpo user. No authentication required.
@@ -311,13 +317,20 @@ class TonpoClient:
     ) -> OrderResult:
         """
         Close an open position by ticket.
-
         Args:
             ticket: MT5 position ticket.
             volume: Partial close volume. Omit to close the full position.
+        
+        Raises:
+            TonpoError: If volume is provided and <= 0
+        
         """
+        # VALIDATION
+        if volume is not None and volume < 0:
+            raise TonpoError(f"Volume must be positive if provided, got {volume}")
+            
         payload: dict = {"ticket": ticket}
-        if volume is not None:
+        if volume is not None and volume > 0:
             payload["volume"] = volume
         data = await self._http.post("/api/orders/close", json=payload)
         return OrderResult.from_dict(data)
@@ -328,10 +341,27 @@ class TonpoClient:
         sl: Optional[float] = None,
         tp: Optional[float] = None,
     ) -> OrderResult:
-        """Modify stop-loss and/or take-profit on an open position."""
+        """
+        Modify stop-loss and/or take-profit on an open position.
+        
+        Args:
+            ticket: MT5 position ticket.
+            sl: New stop loss price (must be positive).
+            tp: New take profit price (must be positive).
+            
+        Raises:
+            TonpoError: If sl or tp are provided and <= 0
+        """
+        if sl is not None and sl <= 0:
+            raise TonpoError(f"Stop loss must be positive, got {sl}")
+        if tp is not None and tp <= 0:
+            raise TonpoError(f"Take profit must be positive, got {tp}")
+            
         payload: dict = {"ticket": ticket}
-        if sl is not None: payload["sl"] = sl
-        if tp is not None: payload["tp"] = tp
+        if sl is not None:
+            payload["sl"] = sl
+        if tp is not None:
+            payload["tp"] = tp
         data = await self._http.post("/api/orders/modify", json=payload)
         return OrderResult.from_dict(data)
 
@@ -431,17 +461,43 @@ class TonpoClient:
         comment: Optional[str] = None,
         magic: Optional[int] = None,
     ) -> OrderResult:
+        # VOLUME VALIDATION 
+        if volume <= 0:
+            raise TonpoError(f"Volume must be positive, got {volume}")
+        
+        #  SYMBOL VALIDATION
+        if not symbol or not symbol.strip():
+            raise TonpoError("Symbol cannot be empty or whitespace")
+        
+        # PRICE VALIDATION            
+        if order_type in ('limit', 'stop'):
+            if price is None:
+                raise TonpoError(f"{order_type.capitalize()} orders require a price")
+            if price <= 0:
+                raise TonpoError(f"Price must be positive for {order_type} orders, got {price}")
+        
+        #  SL/TP VALIDATION 
+        if sl is not None and sl <= 0:
+            raise TonpoError(f"Stop loss must be positive, got {sl}")
+        if tp is not None and tp <= 0:
+            raise TonpoError(f"Take profit must be positive, got {tp}")
+            
         payload: dict = {
             "symbol":    symbol,
             "side":      side,
             "orderType": order_type,
             "volume":    volume,
         }
-        if price   is not None: payload["price"]   = price
-        if sl      is not None: payload["sl"]      = sl
-        if tp      is not None: payload["tp"]      = tp
-        if comment:             payload["comment"] = comment
-        if magic:               payload["magic"]   = magic
+        if price is not None:
+            payload["price"] = price
+        if sl is not None:
+            payload["sl"] = sl
+        if tp is not None:
+            payload["tp"] = tp
+        if comment:
+            payload["comment"] = comment
+        if magic:
+            payload["magic"] = magic
 
         data = await self._http.post("/api/orders", json=payload)
         return OrderResult.from_dict(data)

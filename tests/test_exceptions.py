@@ -4,17 +4,17 @@ Layer 1 — Exception hierarchy tests.
 """
 import builtins
 import pytest
-from cipher_gateway.exceptions import (
-    CipherGatewayError,
+from tonpo.exceptions import (
+    TonpoError,
     NotStartedError,
     AuthenticationError,
     AccountNotFoundError,
     AccountLoginFailedError,
     AccountTimeoutError,
     OrderError,
-    GatewayConnectionError,
+    TonpoConnectionError,
     SubscriptionError,
-    GatewayResponseError,
+    TonpoResponseError,
 )
 
 
@@ -28,27 +28,27 @@ class TestExceptionHierarchy:
             AccountLoginFailedError,
             AccountTimeoutError,
             OrderError,
-            GatewayConnectionError,
+            TonpoConnectionError,
             SubscriptionError,
-            GatewayResponseError,
+            TonpoResponseError,
         ]:
-            assert issubclass(exc_class, CipherGatewayError), \
-                f"{exc_class.__name__} must inherit from CipherGatewayError"
+            assert issubclass(exc_class, TonpoError), \
+                f"{exc_class.__name__} must inherit from TonpoError"
 
     def test_base_inherits_from_exception(self):
-        assert issubclass(CipherGatewayError, Exception)
+        assert issubclass(TonpoError, Exception)
 
     def test_catch_all_works(self):
         for exc_class in [AuthenticationError, AccountLoginFailedError,
-                          GatewayConnectionError, OrderError]:
-            with pytest.raises(CipherGatewayError):
+                          TonpoConnectionError, OrderError]:
+            with pytest.raises(TonpoError):
                 raise exc_class("test")
 
     def test_gateway_connection_error_does_not_shadow_builtin(self):
         # The SDK must NOT export a class named 'ConnectionError'
         # which would shadow builtins.ConnectionError
-        assert GatewayConnectionError is not builtins.ConnectionError
-        assert GatewayConnectionError.__name__ == 'GatewayConnectionError'
+        assert TonpoConnectionError is not builtins.ConnectionError
+        assert TonpoConnectionError.__name__ == 'TonpoConnectionError'
 
     def test_builtin_connection_error_still_works(self):
         # After importing from SDK, builtins.ConnectionError is intact
@@ -56,20 +56,20 @@ class TestExceptionHierarchy:
             raise builtins.ConnectionError("system network error")
 
 
-class TestGatewayResponseError:
+class TestTonpoResponseError:
 
     def test_message_and_defaults(self):
-        e = GatewayResponseError("bad gateway")
+        e = TonpoResponseError("bad gateway")
         assert str(e) == "bad gateway"
         assert e.status_code == 0
         assert e.raw == ""
 
     def test_with_status_and_raw(self):
-        e = GatewayResponseError("server error", status_code=500, raw="Internal Server Error")
+        e = TonpoResponseError("server error", status_code=500, raw="Internal Server Error")
         assert e.status_code == 500
         assert e.raw == "Internal Server Error"
 
     def test_is_catchable_as_base(self):
-        with pytest.raises(CipherGatewayError) as exc_info:
-            raise GatewayResponseError("oops", status_code=422)
+        with pytest.raises(TonpoError) as exc_info:
+            raise TonpoResponseError("oops", status_code=422)
         assert exc_info.value.status_code == 422
