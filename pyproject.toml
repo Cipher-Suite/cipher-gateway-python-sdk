@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tonpo"
-version = "1.0.5"
+version = "1.0.6"
 description = "Python SDK for integrating with Tonpo Gateway, enabling secure access to MetaTrader 5 trading services."
 readme = "README.md"
 license = { text = "Proprietary" }
