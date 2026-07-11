@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/tonpo.svg)](https://pypi.org/project/tonpo/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
-Official Python SDK for the **Tonpo API** — connect your application to MetaTrader 5 in minutes.
+Official Python SDK for the **Tonpo API**. Easily integrate MetaTrader 5 into your Python applications.
 
 ---
 
